@@ -32,9 +32,26 @@ export default function DefaultToolCard({ toolId, tool, isExpanded, onToggle, ba
   };
 
   const handleCopy = async (text, field) => {
-    await navigator.clipboard.writeText(replaceVars(text));
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
+    try {
+      const processedText = replaceVars(text);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(processedText);
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = processedText;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   };
 
   const handleSelectModel = (model) => {

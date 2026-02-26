@@ -11,9 +11,26 @@ export function useCopyToClipboard(resetDelay = 2000) {
   const [copied, setCopied] = useState(null);
   const timeoutRef = useRef(null);
 
-  const copy = useCallback((text, id = "default") => {
-    navigator.clipboard.writeText(text);
-    setCopied(id);
+  const copy = useCallback(async (text, id = "default") => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopied(id);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      return;
+    }
 
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);

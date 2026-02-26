@@ -157,8 +157,20 @@ export default function TranslatorPage() {
     try {
       const content = steps[stepId];
       if (!content) return;
-      
-      await navigator.clipboard.writeText(content);
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(content);
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = content;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
       alert("Copied to clipboard!");
     } catch (err) {
       alert("Error copying: " + err.message);
