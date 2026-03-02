@@ -120,7 +120,8 @@ export function trackPendingRequest(model, provider, connectionId, started, erro
     lastErrorProvider.ts = Date.now();
   }
 
-  console.log(`[PENDING] ${started ? "START" : "END"}${error ? " (ERROR)" : ""} | provider=${provider} | model=${model} | emitter listeners=${statsEmitter.listenerCount("pending")}`);
+  const t = new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  console.log(`[${t}] [PENDING] ${started ? "START" : "END"}${error ? " (ERROR)" : ""} | provider=${provider} | model=${model}`);
   statsEmitter.emit("pending");
 }
 
@@ -436,7 +437,7 @@ export async function getUsageStats() {
   const history = db.data.history || [];
 
   // Import localDb to get provider connection names and API keys
-  const { getProviderConnections, getApiKeys } = await import("@/lib/localDb.js");
+  const { getProviderConnections, getApiKeys, getProviderNodes } = await import("@/lib/localDb.js");
 
   // Fetch all provider connections to get account names
   let allConnections = [];
@@ -452,6 +453,15 @@ export async function getUsageStats() {
   for (const conn of allConnections) {
     connectionMap[conn.id] = conn.name || conn.email || conn.id;
   }
+
+  // Build map from compatible provider ID → friendly name (from providerNodes)
+  const providerNodeNameMap = {};
+  try {
+    const nodes = await getProviderNodes();
+    for (const node of nodes) {
+      if (node.id && node.name) providerNodeNameMap[node.id] = node.name;
+    }
+  } catch {}
 
   // Fetch all API keys to get key names
   let allApiKeys = [];
@@ -596,6 +606,8 @@ export async function getUsageStats() {
     // By Model
     // Format: "modelName (provider)" if provider is known
     const modelKey = entry.provider ? `${entry.model} (${entry.provider})` : entry.model;
+    // Resolve friendly name for compatible providers
+    const providerDisplayName = providerNodeNameMap[entry.provider] || entry.provider;
 
     if (!stats.byModel[modelKey]) {
       stats.byModel[modelKey] = {
@@ -604,7 +616,7 @@ export async function getUsageStats() {
         completionTokens: 0,
         cost: 0,
         rawModel: entry.model,
-        provider: entry.provider,
+        provider: providerDisplayName,
         lastUsed: entry.timestamp
       };
     }
@@ -629,7 +641,7 @@ export async function getUsageStats() {
           completionTokens: 0,
           cost: 0,
           rawModel: entry.model,
-          provider: entry.provider,
+          provider: providerDisplayName,
           connectionId: entry.connectionId,
           accountName: accountName,
           lastUsed: entry.timestamp
@@ -660,7 +672,7 @@ export async function getUsageStats() {
           completionTokens: 0,
           cost: 0,
           rawModel: entry.model,
-          provider: entry.provider,
+          provider: providerDisplayName,
           apiKey: entry.apiKey,
           keyName: keyName,
           apiKeyKey: apiKeyKey,
@@ -686,7 +698,7 @@ export async function getUsageStats() {
           completionTokens: 0,
           cost: 0,
           rawModel: entry.model,
-          provider: entry.provider,
+          provider: providerDisplayName,
           apiKey: null,
           keyName: keyName,
           apiKeyKey: apiKeyKey,
@@ -715,7 +727,7 @@ export async function getUsageStats() {
         cost: 0,
         endpoint: endpoint,
         rawModel: entry.model,
-        provider: entry.provider,
+        provider: providerDisplayName,
         lastUsed: entry.timestamp
       };
     }

@@ -19,7 +19,8 @@ const navItems = [
 
 // Debug items (only show when ENABLE_REQUEST_LOGS=true)
 const debugItems = [
-  { href: "/dashboard/translator", label: "Translator", icon: "translate" },
+  // { href: "/dashboard/translator", label: "Translator", icon: "translate" },
+  { href: "/dashboard/console-log", label: "Console Log", icon: "terminal" },
 ];
 
 const systemItems = [
@@ -31,13 +32,13 @@ export default function Sidebar({ onClose }) {
   const [showShutdownModal, setShowShutdownModal] = useState(false);
   const [isShuttingDown, setIsShuttingDown] = useState(false);
   const [isDisconnected, setIsDisconnected] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState(null);
 
-  // Check if debug mode is enabled
+  // Lazy check for new npm version on mount
   useEffect(() => {
-    fetch("/api/settings")
+    fetch("/api/version")
       .then(res => res.json())
-      .then(data => setShowDebug(data?.enableRequestLogs === true))
+      .then(data => { if (data.hasUpdate) setUpdateInfo(data); })
       .catch(() => {});
   }, []);
 
@@ -71,7 +72,7 @@ export default function Sidebar({ onClose }) {
         </div>
 
         {/* Logo */}
-        <div className="px-6 py-4">
+        <div className="px-6 py-4 flex flex-col gap-2">
           <Link href="/dashboard" className="flex items-center gap-3">
             <div className="flex items-center justify-center size-9 rounded bg-linear-to-br from-[#f97815] to-[#c2590a]">
               <span className="material-symbols-outlined text-white text-[20px]">hub</span>
@@ -83,6 +84,16 @@ export default function Sidebar({ onClose }) {
               <span className="text-xs text-text-muted">v{APP_CONFIG.version}</span>
             </div>
           </Link>
+          {updateInfo && (
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-semibold text-green-600 dark:text-amber-500">
+                ↑ New version available: v{updateInfo.latestVersion}
+              </span>
+              <code className="text-[10px] text-green-600/80 dark:text-amber-400/70 font-mono select-all">
+                npm install -g 9router@latest
+              </code>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}
@@ -111,9 +122,8 @@ export default function Sidebar({ onClose }) {
             </Link>
           ))}
 
-          {/* Debug section (only show when ENABLE_REQUEST_LOGS=true) */}
-          {showDebug && (
-            <div className="pt-4 mt-2">
+          {/* Debug section */}
+          <div className="pt-4 mt-2">
               <p className="px-4 text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2">
                 Debug
               </p>
@@ -141,7 +151,6 @@ export default function Sidebar({ onClose }) {
                 </Link>
               ))}
             </div>
-          )}
 
           {/* System section */}
           <div className="pt-4 mt-2">

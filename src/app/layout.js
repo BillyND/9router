@@ -2,6 +2,11 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/shared/components/ThemeProvider";
 import "@/lib/initCloudSync"; // Auto-initialize cloud sync
+import "@/lib/network/initOutboundProxy"; // Auto-initialize outbound proxy env
+import { initConsoleLogCapture } from "@/lib/consoleLogBuffer";
+
+// Hook console immediately at module load time (server-side only, runs once)
+initConsoleLogCapture();
 
 const inter = Inter({
   subsets: ["latin"],
